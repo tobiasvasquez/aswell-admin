@@ -3,6 +3,7 @@ import { ProductList } from "@/components/product-list"
 import { Button } from "@/components/ui/button"
 import { Package, Plus } from "lucide-react"
 import Link from "next/link"
+import { ModeToggle } from "@/components/theme-provider"
 
 export default async function InventoryPage() {
   const supabase = await createClient()
@@ -43,6 +44,7 @@ export default async function InventoryPage() {
                   Gestionar Categorías
                 </Button>
               </Link>
+              <ModeToggle />
             </div>
           </div>
         </div>

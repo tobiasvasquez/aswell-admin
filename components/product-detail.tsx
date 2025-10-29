@@ -36,29 +36,12 @@ type ProductDetailProps = {
   totalSold: number
 }
 
-// Dynamic category label function
-const getCategoryLabel = (category: string): string => {
-  return category.charAt(0).toUpperCase() + category.slice(1)
-}
-
-// Dynamic category color function
-const getCategoryColor = (category: string): string => {
-  // Simple hash function to generate consistent colors
-  let hash = 0
-  for (let i = 0; i < category.length; i++) {
-    hash = category.charCodeAt(i) + ((hash << 5) - hash)
+// Dynamic category labels and colors
+const getCategoryLabel = (category: any): string => {
+  if (!category || typeof category !== 'string') {
+    return ''
   }
-  const c = (hash & 0x00ffffff).toString(16).toUpperCase()
-  const color = "#" + "00000".substring(0, 6 - c.length) + c
-  
-  // Generate text color based on background brightness
-  const r = parseInt(color.slice(1, 3), 16)
-  const g = parseInt(color.slice(3, 5), 16)
-  const b = parseInt(color.slice(5, 7), 16)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  const textColor = brightness > 128 ? "text-gray-900" : "text-gray-50"
-  
-  return `${color} ${textColor}`
+  return category.charAt(0).toUpperCase() + category.slice(1)
 }
 
 export function ProductDetail({ product, sales, totalRevenue, totalSold }: ProductDetailProps) {
@@ -69,11 +52,28 @@ export function ProductDetail({ product, sales, totalRevenue, totalSold }: Produ
   const supabase = createClient()
   const [categoryLabel, setCategoryLabel] = useState("")
   const [categoryColor, setCategoryColor] = useState("")
+  const [categories, setCategories] = useState<Array<{name: string, count: number, color: string}>>([])
 
   useEffect(() => {
-    setCategoryLabel(getCategoryLabel(product.category))
-    setCategoryColor(getCategoryColor(product.category))
-  }, [product.category])
+    async function loadCategories() {
+      try {
+        const cats = await getCategories()
+        setCategories(cats)
+      } catch (error) {
+        console.error("Error loading categories:", error)
+        setCategories([])
+      }
+    }
+    loadCategories()
+  }, [])
+
+  useEffect(() => {
+    const category = categories.find(c => c.name === product.category)
+    if (category) {
+      setCategoryLabel(getCategoryLabel(category.name))
+      setCategoryColor(category.color)
+    }
+  }, [product.category, categories])
 
   const updateStock = async (newStock: number, quantityChange: number) => {
     if (newStock < 0) return
@@ -187,7 +187,11 @@ export function ProductDetail({ product, sales, totalRevenue, totalSold }: Produ
                     {product.description || "Sin descripción"}
                   </CardDescription>
                 </div>
-                <Badge variant="secondary" className="text-sm" style={{ backgroundColor: categoryColor.split(' ')[0] }}>
+                <Badge 
+                  variant="secondary" 
+                  className="text-sm" 
+                  style={{ backgroundColor: categoryColor }}
+                >
                   {categoryLabel}
                 </Badge>
               </div>

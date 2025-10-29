@@ -1,4 +1,7 @@
-import { getCategories, createCategory } from "@/app/actions/category-actions"
+"use client"
+
+import { getCategories } from "@/app/actions/category-actions"
+import { createCategory } from "@/app/actions/create-category-action"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,23 +9,29 @@ import { Label } from "@/components/ui/label"
 import { Plus, ArrowLeft } from "lucide-react"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { ModeToggle } from "@/components/theme-provider"
+import { useState, useEffect } from "react"
 
-export default async function CategoriesPage() {
-  const categories = await getCategories()
+export default function CategoriesPage() {
+  const [categories, setCategories] = useState<Array<{name: string, count: number, color: string}>>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [selectedColor, setSelectedColor] = useState('#6366f1')
 
-  async function handleCreateCategory(formData: FormData) {
-    "use server"
-    
-    const name = formData.get("name") as string
-    
-    try {
-      await createCategory(name)
-    } catch (error) {
-      console.error("Error creating category:", error)
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const cats = await getCategories()
+        setCategories(cats)
+      } catch (error) {
+        console.error("Error loading categories:", error)
+        setCategories([])
+      } finally {
+        setIsLoading(false)
+      }
     }
-    
-    redirect("/categories")
-  }
+    loadCategories()
+  }, [])
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,6 +56,7 @@ export default async function CategoriesPage() {
                   Agregar Producto
                 </Button>
               </Link>
+              <ModeToggle />
             </div>
           </div>
         </div>
@@ -59,7 +69,7 @@ export default async function CategoriesPage() {
               <CardTitle>Crear Nueva Categoría</CardTitle>
             </CardHeader>
             <CardContent>
-              <form action={handleCreateCategory} className="space-y-4">
+              <form action={createCategory} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre de la Categoría</Label>
                   <Input
@@ -68,6 +78,26 @@ export default async function CategoriesPage() {
                     placeholder="Ej: Anillos, Pulseras, etc."
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="color">Color de la Categoría</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="color"
+                      name="color"
+                      type="color"
+                      defaultValue="#6366f1"
+                      className="h-10 w-16 cursor-pointer"
+                      onChange={(e) => setSelectedColor(e.target.value)}
+                    />
+                    <Input
+                      name="color"
+                      type="text"
+                      value={selectedColor}
+                      readOnly
+                      className="flex-1"
+                    />
+                  </div>
                 </div>
                 <Button type="submit" className="w-full">
                   <Plus className="mr-2 h-4 w-4" />
@@ -89,12 +119,12 @@ export default async function CategoriesPage() {
                   <ul className="space-y-2">
                     {categories.map((category) => (
                       <li
-                        key={category}
+                        key={category.name}
                         className="flex items-center justify-between rounded-md border border-border px-3 py-2"
                       >
-                        <span className="capitalize">{category}</span>
+                        <span className="capitalize">{category.name}</span>
                         <span className="text-sm text-muted-foreground">
-                          {category.length} productos
+                          {category.count} productos
                         </span>
                       </li>
                     ))}

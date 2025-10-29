@@ -11,6 +11,14 @@ import { ImageUpload } from "@/components/image-upload"
 import { Loader2 } from "lucide-react"
 import { getCategories } from "@/app/actions/category-actions"
 
+// Dynamic category labels and colors
+const getCategoryLabel = (category: any): string => {
+  if (!category || typeof category !== 'string') {
+    return ''
+  }
+  return category.charAt(0).toUpperCase() + category.slice(1)
+}
+
 type ProductFormProps = {
   action: (formData: FormData) => Promise<void>
   defaultValues?: {
@@ -28,7 +36,7 @@ export function ProductForm({ action, defaultValues, submitLabel = "Crear Produc
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [category, setCategory] = useState(defaultValues?.category || "")
   const [images, setImages] = useState<string[]>(defaultValues?.images || [])
-  const [categories, setCategories] = useState<string[]>([])
+  const [categories, setCategories] = useState<Array<{name: string, count: number}>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -77,7 +85,7 @@ export function ProductForm({ action, defaultValues, submitLabel = "Crear Produc
               <SelectTrigger id="category">
                 <SelectValue placeholder="Selecciona una categoría" />
               </SelectTrigger>
-              <SelectContent>
+                <SelectContent>
                 {isLoading ? (
                   <SelectItem value="loading" disabled>
                     Cargando categorías...
@@ -88,8 +96,8 @@ export function ProductForm({ action, defaultValues, submitLabel = "Crear Produc
                   </SelectItem>
                 ) : (
                   categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    <SelectItem key={cat.name} value={cat.name}>
+                      {getCategoryLabel(cat.name)}
                     </SelectItem>
                   ))
                 )}

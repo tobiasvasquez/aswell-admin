@@ -30,27 +30,11 @@ type ProductListProps = {
 }
 
 // Dynamic category labels and colors
-const getCategoryLabel = (category: string): string => {
-  return category.charAt(0).toUpperCase() + category.slice(1)
-}
-
-const getCategoryColor = (category: string): string => {
-  // Simple hash function to generate consistent colors
-  let hash = 0
-  for (let i = 0; i < category.length; i++) {
-    hash = category.charCodeAt(i) + ((hash << 5) - hash)
+const getCategoryLabel = (category: any): string => {
+  if (!category || typeof category !== 'string') {
+    return ''
   }
-  const c = (hash & 0x00ffffff).toString(16).toUpperCase()
-  const color = "#" + "00000".substring(0, 6 - c.length) + c
-  
-  // Generate text color based on background brightness
-  const r = parseInt(color.slice(1, 3), 16)
-  const g = parseInt(color.slice(3, 5), 16)
-  const b = parseInt(color.slice(5, 7), 16)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  const textColor = brightness > 128 ? "text-gray-900" : "text-gray-50"
-  
-  return `${color} ${textColor}`
+  return category.charAt(0).toUpperCase() + category.slice(1)
 }
 
 export function ProductList({ products }: ProductListProps) {
@@ -60,7 +44,7 @@ export function ProductList({ products }: ProductListProps) {
   const [optimisticProducts, setOptimisticProducts] = useState(products)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
-  const [categories, setCategories] = useState<string[]>([])
+  const [categories, setCategories] = useState<Array<{name: string, count: number, color: string}>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -88,6 +72,23 @@ export function ProductList({ products }: ProductListProps) {
     if (stock === 0) return { label: "Sin stock", color: "bg-destructive text-destructive-foreground" }
     if (stock < 5) return { label: "Stock bajo", color: "bg-orange-500 text-white" }
     return { label: "En stock", color: "bg-green-600 text-white" }
+  }
+
+  const getCategoryColor = (categoryId: string): string => {
+    const category = categories.find(c => c.name === categoryId)
+    if (category && category.color) {
+      const color = category.color
+      // Generate text color based on background brightness
+      const r = parseInt(color.slice(1, 3), 16)
+      const g = parseInt(color.slice(3, 5), 16)
+      const b = parseInt(color.slice(5, 7), 16)
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000
+      const textColor = brightness > 128 ? "text-gray-900" : "text-gray-50"
+      
+      return `${color} ${textColor}`
+    }
+    // Fallback color if category not found
+    return "#6366f1 text-white"
   }
 
   const handleStockChange = async (productId: string, currentStock: number, change: number) => {
@@ -142,8 +143,8 @@ export function ProductList({ products }: ProductListProps) {
                   </SelectItem>
                 ) : (
                   categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {getCategoryLabel(cat)}
+                    <SelectItem key={cat.name} value={cat.name}>
+                      {getCategoryLabel(cat.name)}
                     </SelectItem>
                   ))
                 )}
