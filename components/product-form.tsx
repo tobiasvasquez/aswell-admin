@@ -36,7 +36,7 @@ export function ProductForm({ action, defaultValues, submitLabel = "Crear Produc
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [category, setCategory] = useState(defaultValues?.category || "")
   const [images, setImages] = useState<string[]>(defaultValues?.images || [])
-  const [categories, setCategories] = useState<Array<{name: string, count: number}>>([])
+  const [categories, setCategories] = useState<Array<{id: string, name: string, count: number, color: string}>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {

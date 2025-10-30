@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
+import { revalidatePath } from "next/cache"
 import { ProductForm } from "@/components/product-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -33,11 +34,35 @@ export default async function EditProductPage({ params }: PageProps) {
     const imagesJson = formData.get("images") as string
     const images = imagesJson ? JSON.parse(imagesJson) : []
 
+    // First get the current product to ensure we have the correct category_id
+    const { data: currentProduct, error: fetchError } = await supabase
+      .from("products")
+      .select("category")
+      .eq("id", id)
+      .single()
+
+    if (fetchError || !currentProduct) {
+      console.error("[v0] Error fetching current product:", fetchError)
+      throw new Error("Error al obtener el producto")
+    }
+
+    // First get the category ID from the categories table
+    const { data: categoryData, error: categoryError } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("name", category)
+      .single()
+
+    if (categoryError || !categoryData) {
+      console.error("[v0] Error finding category:", categoryError)
+      throw new Error("Error al encontrar la categoría")
+    }
+
     const { error } = await supabase
       .from("products")
       .update({
         name,
-        category,
+        category: categoryData.id,
         stock,
         price,
         description: description || null,
@@ -50,6 +75,10 @@ export default async function EditProductPage({ params }: PageProps) {
       throw new Error("Error al actualizar el producto")
     }
 
+    revalidatePath("/")
+    revalidatePath(`/products/${id}`)
+    revalidatePath(`/products/${id}/edit`)
+    
     redirect("/")
   }
 
@@ -67,6 +96,15 @@ export default async function EditProductPage({ params }: PageProps) {
 
     redirect("/")
   }
+
+  // Get the category name from the categories table using the category ID
+  const { data: categoryData, error: categoryError } = await supabase
+    .from("categories")
+    .select("name")
+    .eq("id", product.category)
+    .single()
+
+  const categoryName = categoryError ? product.category : categoryData?.name
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,7 +133,7 @@ export default async function EditProductPage({ params }: PageProps) {
             action={updateProduct}
             defaultValues={{
               name: product.name,
-              category: product.category,
+              category: categoryName,
               stock: product.stock,
               price: product.price,
               description: product.description,

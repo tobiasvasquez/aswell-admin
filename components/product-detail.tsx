@@ -52,7 +52,7 @@ export function ProductDetail({ product, sales, totalRevenue, totalSold }: Produ
   const supabase = createClient()
   const [categoryLabel, setCategoryLabel] = useState("")
   const [categoryColor, setCategoryColor] = useState("")
-  const [categories, setCategories] = useState<Array<{name: string, count: number, color: string}>>([])
+  const [categories, setCategories] = useState<Array<{id: string, name: string, count: number, color: string}>>([])
 
   useEffect(() => {
     async function loadCategories() {

@@ -19,9 +19,21 @@ export default function NewProductPage() {
     const imagesJson = formData.get("images") as string
     const images = imagesJson ? JSON.parse(imagesJson) : []
 
+    // First get the category ID from the categories table
+    const { data: categoryData, error: categoryError } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("name", category)
+      .single()
+
+    if (categoryError || !categoryData) {
+      console.error("[v0] Error finding category:", categoryError)
+      throw new Error("Error al encontrar la categoría")
+    }
+
     const { error } = await supabase.from("products").insert({
       name,
-      category,
+      category: categoryData.id,
       stock,
       price,
       description: description || null,

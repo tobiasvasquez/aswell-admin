@@ -44,7 +44,7 @@ export function ProductList({ products }: ProductListProps) {
   const [optimisticProducts, setOptimisticProducts] = useState(products)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
-  const [categories, setCategories] = useState<Array<{name: string, count: number, color: string}>>([])
+  const [categories, setCategories] = useState<Array<{id: string, name: string, count: number, color: string}>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -74,8 +74,13 @@ export function ProductList({ products }: ProductListProps) {
     return { label: "En stock", color: "bg-green-600 text-white" }
   }
 
-  const getCategoryColor = (categoryId: string): string => {
-    const category = categories.find(c => c.name === categoryId)
+  const getCategoryColor = (productId: string): string => {
+    // Find the product to get its category ID
+    const product = products.find(p => p.id === productId)
+    if (!product) return "#6366f1 text-white"
+    
+    // Find the category by ID to get its color
+    const category = categories.find(c => c.id === product.category)
     if (category && category.color) {
       const color = category.color
       // Generate text color based on background brightness
@@ -197,11 +202,11 @@ export function ProductList({ products }: ProductListProps) {
                       <CardDescription className="mt-1">{product.description || "Sin descripción"}</CardDescription>
                     </div>
                     <Badge 
-                      className={getCategoryColor(product.category)} 
+                      className={getCategoryColor(product.id)} 
                       variant="secondary"
-                      style={{ backgroundColor: getCategoryColor(product.category).split(' ')[0] }}
+                      style={{ backgroundColor: getCategoryColor(product.id).split(' ')[0] }}
                     >
-                      {getCategoryLabel(product.category)}
+                      {getCategoryLabel(categories.find(c => c.id === product.category)?.name || product.category)}
                     </Badge>
                   </div>
                 </CardHeader>
