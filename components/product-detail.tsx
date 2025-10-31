@@ -9,11 +9,17 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { updateStockAction } from "@/app/actions/stock-actions"
-import type { Product, Sale } from "@/types"
+import type { Product } from "@/types"
+
+type SaleSummary = {
+  quantity_sold: number
+  total_amount: number
+  created_at: string
+}
 
 type ProductDetailProps = {
   product: Product
-  sales: Sale[]
+  sales: SaleSummary[]
   totalRevenue: number
   totalSold: number
   categoryLabel: string
