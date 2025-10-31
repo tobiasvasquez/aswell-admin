@@ -23,7 +23,7 @@ export default async function InventoryPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <Link href="/">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
@@ -35,26 +35,28 @@ export default async function InventoryPage() {
                 <p className="text-sm text-muted-foreground">Administra tu stock de productos</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Link href="/products/new">
-                <Button size="lg">
+            <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
+              <Link href="/products/new" className="flex-1 md:flex-none">
+                <Button className="w-full md:w-auto" size="lg">
                   <Plus className="mr-2 h-4 w-4" />
                   Agregar Producto
                 </Button>
               </Link>
-              <Link href="/sales">
-                <Button size="lg" variant="secondary">
+              <Link href="/sales" className="flex-1 md:flex-none">
+                <Button className="w-full md:w-auto" size="lg" variant="secondary">
                   <TrendingUp className="mr-2 h-4 w-4" />
                   Ver Ventas
                 </Button>
               </Link>
-              <Link href="/categories">
-                <Button size="lg" variant="outline">
+              <Link href="/categories" className="flex-1 md:flex-none">
+                <Button className="w-full md:w-auto" size="lg" variant="outline">
                   <Plus className="mr-2 h-4 w-4" />
                   Gestionar Categorías
                 </Button>
               </Link>
-              <ModeToggle />
+              <div className="ml-auto md:ml-0">
+                <ModeToggle />
+              </div>
             </div>
           </div>
         </div>

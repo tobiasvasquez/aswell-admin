@@ -86,25 +86,52 @@ export function ProductDetail({ product, sales, totalRevenue, totalSold, categor
           </Card>
 
           {images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
-                    selectedImage === index
-                      ? "border-primary ring-2 ring-primary ring-offset-2"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <Image
-                    src={image || "/placeholder.svg"}
-                    alt={`${product.name} - imagen ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                </button>
-              ))}
+            <div className="md:grid md:grid-cols-4 md:gap-2 md:overflow-visible">
+              {/* Mobile: tira horizontal scrollable */}
+              <div className="-mx-4 md:mx-0">
+                <div className="flex gap-2 overflow-x-auto px-4 md:px-0 md:block md:overflow-visible">
+                  <div className="hidden md:grid md:grid-cols-4 md:gap-2 w-full">
+                    {images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+                          selectedImage === index
+                            ? "border-primary ring-2 ring-primary ring-offset-2"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <Image
+                          src={image || "/placeholder.svg"}
+                          alt={`${product.name} - imagen ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 md:hidden">
+                    {images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                          selectedImage === index
+                            ? "border-primary ring-2 ring-primary ring-offset-2"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <Image
+                          src={image || "/placeholder.svg"}
+                          alt={`${product.name} - miniatura ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -113,16 +140,16 @@ export function ProductDetail({ product, sales, totalRevenue, totalSold, categor
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-3xl">{product.name}</CardTitle>
-                  <CardDescription className="mt-2 text-base">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <CardTitle className="text-2xl sm:text-3xl break-words">{product.name}</CardTitle>
+                  <CardDescription className="mt-2 text-sm sm:text-base">
                     {product.description || "Sin descripción"}
                   </CardDescription>
                 </div>
                 <Badge 
                   variant="secondary" 
-                  className="text-sm" 
+                  className="text-xs sm:text-sm" 
                   style={{ backgroundColor: categoryColor }}
                 >
                   {categoryLabel}
@@ -131,7 +158,7 @@ export function ProductDetail({ product, sales, totalRevenue, totalSold, categor
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold">${product.price.toFixed(2)}</span>
+                <span className="text-3xl sm:text-4xl font-bold">${product.price.toFixed(2)}</span>
                 <span className="text-muted-foreground">por unidad</span>
               </div>
 
@@ -236,7 +263,7 @@ export function ProductDetail({ product, sales, totalRevenue, totalSold, categor
           <CardContent>
             <div className="space-y-3">
               {sales.slice(0, 10).map((sale, index) => (
-                <div key={index} className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div key={index} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border p-3">
                   <div>
                     <p className="font-medium">
                       {sale.quantity_sold} unidad{sale.quantity_sold > 1 ? "es" : ""}
