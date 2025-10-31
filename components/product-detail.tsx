@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,104 +8,37 @@ import { Minus, Plus, Pencil, DollarSign, TrendingUp, Package } from "lucide-rea
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { createClient } from "@/lib/supabase/client"
-import { getCategories } from "@/app/actions/category-actions"
-
-type Product = {
-  id: string
-  name: string
-  category: string
-  stock: number
-  price: number
-  description: string | null
-  images: string[]
-  created_at: string
-  updated_at: string
-}
-
-type Sale = {
-  total_amount: number
-  quantity_sold: number
-  created_at: string
-}
+import { updateStockAction } from "@/app/actions/stock-actions"
+import type { Product, Sale } from "@/types"
 
 type ProductDetailProps = {
   product: Product
   sales: Sale[]
   totalRevenue: number
   totalSold: number
+  categoryLabel: string
+  categoryColor: string
 }
 
-// Dynamic category labels and colors
-const getCategoryLabel = (category: any): string => {
-  if (!category || typeof category !== 'string') {
-    return ''
-  }
-  return category.charAt(0).toUpperCase() + category.slice(1)
-}
-
-export function ProductDetail({ product, sales, totalRevenue, totalSold }: ProductDetailProps) {
+export function ProductDetail({ product, sales, totalRevenue, totalSold, categoryLabel, categoryColor }: ProductDetailProps) {
   const [currentStock, setCurrentStock] = useState(product.stock)
   const [selectedImage, setSelectedImage] = useState(0)
   const [isUpdating, setIsUpdating] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
-  const [categoryLabel, setCategoryLabel] = useState("")
-  const [categoryColor, setCategoryColor] = useState("")
-  const [categories, setCategories] = useState<Array<{id: string, name: string, count: number, color: string}>>([])
-
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const cats = await getCategories()
-        setCategories(cats)
-      } catch (error) {
-        console.error("Error loading categories:", error)
-        setCategories([])
-      }
-    }
-    loadCategories()
-  }, [])
-
-  useEffect(() => {
-    const category = categories.find(c => c.name === product.category)
-    if (category) {
-      setCategoryLabel(getCategoryLabel(category.name))
-      setCategoryColor(category.color)
-    }
-  }, [product.category, categories])
 
   const updateStock = async (newStock: number, quantityChange: number) => {
     if (newStock < 0) return
 
+    // Optimistic update
+    const prev = currentStock
+    setCurrentStock(newStock)
     setIsUpdating(true)
     try {
-      // Actualizar el stock
-      const { error: updateError } = await supabase.from("products").update({ stock: newStock }).eq("id", product.id)
-
-      if (updateError) throw updateError
-
-      // Si se redujo el stock (venta), registrar la transacción
-      if (quantityChange < 0) {
-        const quantitySold = Math.abs(quantityChange)
-        const totalAmount = quantitySold * product.price
-
-        const { error: saleError } = await supabase.from("sales_transactions").insert({
-          product_id: product.id,
-          product_name: product.name,
-          quantity_sold: quantitySold,
-          unit_price: product.price,
-          total_amount: totalAmount,
-        })
-
-        if (saleError) throw saleError
-      }
-
-      setCurrentStock(newStock)
+      await updateStockAction(product.id, newStock)
       router.refresh()
     } catch (error) {
       console.error("[v0] Error updating stock:", error)
-      alert("Error al actualizar el stock")
+      setCurrentStock(prev)
     } finally {
       setIsUpdating(false)
     }

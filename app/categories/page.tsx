@@ -1,37 +1,14 @@
-"use client"
-
-import { getCategories } from "@/app/actions/category-actions"
-import { createCategory } from "@/app/actions/create-category-action"
+import { getCategories, createCategoryAction } from "@/app/actions/category-actions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus, ArrowLeft } from "lucide-react"
-import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ModeToggle } from "@/components/theme-provider"
-import { useState, useEffect } from "react"
 
-export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Array<{name: string, count: number, color: string}>>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedColor, setSelectedColor] = useState('#6366f1')
-
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const cats = await getCategories()
-        setCategories(cats)
-      } catch (error) {
-        console.error("Error loading categories:", error)
-        setCategories([])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadCategories()
-  }, [])
-
+export default async function CategoriesPage() {
+  const categories = await getCategories()
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +46,15 @@ export default function CategoriesPage() {
               <CardTitle>Crear Nueva Categoría</CardTitle>
             </CardHeader>
             <CardContent>
-              <form action={createCategory} className="space-y-4">
+              <form
+                action={async (formData: FormData) => {
+                  "use server"
+                  const name = (formData.get("name") as string) || ""
+                  const color = (formData.get("color") as string) || "#6366f1"
+                  await createCategoryAction(name, color)
+                }}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre de la Categoría</Label>
                   <Input
@@ -81,23 +66,13 @@ export default function CategoriesPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="color">Color de la Categoría</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="color"
-                      name="color"
-                      type="color"
-                      defaultValue="#6366f1"
-                      className="h-10 w-16 cursor-pointer"
-                      onChange={(e) => setSelectedColor(e.target.value)}
-                    />
-                    <Input
-                      name="color"
-                      type="text"
-                      value={selectedColor}
-                      readOnly
-                      className="flex-1"
-                    />
-                  </div>
+                  <Input
+                    id="color"
+                    name="color"
+                    type="color"
+                    defaultValue="#6366f1"
+                    className="h-10 w-16 cursor-pointer"
+                  />
                 </div>
                 <Button type="submit" className="w-full">
                   <Plus className="mr-2 h-4 w-4" />

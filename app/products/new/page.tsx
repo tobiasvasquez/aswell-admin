@@ -4,26 +4,28 @@ import { ProductForm } from "@/components/product-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { getCategories } from "@/app/actions/category-actions"
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+  const categories = await getCategories()
   async function createProduct(formData: FormData) {
     "use server"
 
     const supabase = await createClient()
 
     const name = formData.get("name") as string
-    const category = formData.get("category") as string
+    const categoryId = formData.get("category") as string
     const stock = Number.parseInt(formData.get("stock") as string)
     const price = Number.parseFloat(formData.get("price") as string)
     const description = formData.get("description") as string
     const imagesJson = formData.get("images") as string
     const images = imagesJson ? JSON.parse(imagesJson) : []
 
-    // First get the category ID from the categories table
+    // Verify category exists
     const { data: categoryData, error: categoryError } = await supabase
       .from("categories")
-      .select("id")
-      .eq("name", category)
+      .select("name")
+      .eq("id", categoryId)
       .single()
 
     if (categoryError || !categoryData) {
@@ -33,11 +35,11 @@ export default function NewProductPage() {
 
     const { error } = await supabase.from("products").insert({
       name,
-      category: categoryData.id,
+      category: categoryId,
       stock,
       price,
       description: description || null,
-      images: images.length > 0 ? images : [`/placeholder.svg?height=400&width=400&query=${name} ${category}`],
+      images: images.length > 0 ? images : [`/placeholder.svg?height=400&width=400&query=${name}`],
     })
 
     if (error) {
@@ -68,7 +70,7 @@ export default function NewProductPage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-2xl">
-          <ProductForm action={createProduct} />
+          <ProductForm action={createProduct} categories={categories} />
         </div>
       </main>
     </div>

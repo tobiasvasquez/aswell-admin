@@ -4,6 +4,7 @@ import { ProductDetail } from "@/components/product-detail"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { getCategoryLabel } from "@/lib/utils/category"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -13,11 +14,32 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: product, error } = await supabase.from("products").select("*").eq("id", id).single()
+  const { data: product, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle()
 
-  if (error || !product) {
+  if (error) {
+    // Log de diagnóstico detallado
+    const safeError = {
+      id,
+      code: (error as any)?.code,
+      message: (error as any)?.message,
+      details: (error as any)?.details,
+      hint: (error as any)?.hint,
+      name: (error as any)?.name,
+    }
+    console.error("[v0] Error fetching product detail", safeError)
+  }
+  if (!product) {
     notFound()
   }
+  // Obtener datos de la categoría para etiqueta y color
+  const { data: category } = await supabase
+    .from("categories")
+    .select("name, color")
+    .eq("id", product.category)
+    .single()
+
+  const categoryLabel = category ? getCategoryLabel(category.name) : ""
+  const categoryColor = category?.color ?? ""
 
   // Obtener el total de ventas de este producto
   const { data: sales } = await supabase
@@ -43,7 +65,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <ProductDetail product={product} sales={sales || []} totalRevenue={totalRevenue} totalSold={totalSold} />
+        <ProductDetail
+          product={product}
+          sales={sales || []}
+          totalRevenue={totalRevenue}
+          totalSold={totalSold}
+          categoryLabel={categoryLabel}
+          categoryColor={categoryColor}
+        />
       </main>
     </div>
   )

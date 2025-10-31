@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { DeleteProductButton } from "@/components/delete-product-button"
+import { getCategories } from "@/app/actions/category-actions"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -21,36 +22,26 @@ export default async function EditProductPage({ params }: PageProps) {
     notFound()
   }
 
+  const categories = await getCategories()
+
   async function updateProduct(formData: FormData) {
     "use server"
 
     const supabase = await createClient()
 
     const name = formData.get("name") as string
-    const category = formData.get("category") as string
+    const categoryId = formData.get("category") as string
     const stock = Number.parseInt(formData.get("stock") as string)
     const price = Number.parseFloat(formData.get("price") as string)
     const description = formData.get("description") as string
     const imagesJson = formData.get("images") as string
     const images = imagesJson ? JSON.parse(imagesJson) : []
 
-    // First get the current product to ensure we have the correct category_id
-    const { data: currentProduct, error: fetchError } = await supabase
-      .from("products")
-      .select("category")
-      .eq("id", id)
-      .single()
-
-    if (fetchError || !currentProduct) {
-      console.error("[v0] Error fetching current product:", fetchError)
-      throw new Error("Error al obtener el producto")
-    }
-
-    // First get the category ID from the categories table
+    // Verify category exists
     const { data: categoryData, error: categoryError } = await supabase
       .from("categories")
-      .select("id")
-      .eq("name", category)
+      .select("name")
+      .eq("id", categoryId)
       .single()
 
     if (categoryError || !categoryData) {
@@ -62,11 +53,11 @@ export default async function EditProductPage({ params }: PageProps) {
       .from("products")
       .update({
         name,
-        category: categoryData.id,
+        category: categoryId,
         stock,
         price,
         description: description || null,
-        images: images.length > 0 ? images : [`/placeholder.svg?height=400&width=400&query=${name} ${category}`],
+        images: images.length > 0 ? images : [`/placeholder.svg?height=400&width=400&query=${name}`],
       })
       .eq("id", id)
 
@@ -97,14 +88,7 @@ export default async function EditProductPage({ params }: PageProps) {
     redirect("/")
   }
 
-  // Get the category name from the categories table using the category ID
-  const { data: categoryData, error: categoryError } = await supabase
-    .from("categories")
-    .select("name")
-    .eq("id", product.category)
-    .single()
-
-  const categoryName = categoryError ? product.category : categoryData?.name
+  // Use category ID directly (no need to fetch name for defaultValues)
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,13 +117,14 @@ export default async function EditProductPage({ params }: PageProps) {
             action={updateProduct}
             defaultValues={{
               name: product.name,
-              category: categoryName,
+              category: product.category, // Now using ID directly
               stock: product.stock,
               price: product.price,
               description: product.description,
               images: product.images || [],
             }}
             submitLabel="Guardar Cambios"
+            categories={categories}
           />
         </div>
       </main>

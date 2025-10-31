@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,15 +9,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImageUpload } from "@/components/image-upload"
 import { Loader2 } from "lucide-react"
-import { getCategories } from "@/app/actions/category-actions"
-
-// Dynamic category labels and colors
-const getCategoryLabel = (category: any): string => {
-  if (!category || typeof category !== 'string') {
-    return ''
-  }
-  return category.charAt(0).toUpperCase() + category.slice(1)
-}
+import { productSchema } from "@/lib/validations/product"
+import { toast } from "sonner"
+import type { Category } from "@/types"
+import { getCategoryLabel } from "@/lib/utils/category"
 
 type ProductFormProps = {
   action: (formData: FormData) => Promise<void>
@@ -30,34 +25,52 @@ type ProductFormProps = {
     images?: string[]
   }
   submitLabel?: string
+  categories: Category[]
 }
 
-export function ProductForm({ action, defaultValues, submitLabel = "Crear Producto" }: ProductFormProps) {
+export function ProductForm({ action, defaultValues, submitLabel = "Crear Producto", categories }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [category, setCategory] = useState(defaultValues?.category || "")
   const [images, setImages] = useState<string[]>(defaultValues?.images || [])
-  const [categories, setCategories] = useState<Array<{id: string, name: string, count: number, color: string}>>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const cats = await getCategories()
-        setCategories(cats)
-      } catch (error) {
-        console.error("Error loading categories:", error)
-        setCategories([])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadCategories()
-  }, [])
+  const [isLoading] = useState(false)
 
   async function handleSubmit(formData: FormData) {
+    // Validación con Zod antes de enviar al servidor
+    const rawData = {
+      name: (formData.get("name") as string) || "",
+      category: category,
+      stock: Number(formData.get("stock")),
+      price: Number(formData.get("price")),
+      description: (formData.get("description") as string) || "",
+      images: images,
+    }
+
+    const result = productSchema.safeParse(rawData)
+    if (!result.success) {
+      const first = result.error.issues[0]
+      toast.error(first.message)
+      return
+    }
+
     setIsSubmitting(true)
-    formData.append("images", JSON.stringify(images))
-    await action(formData)
+    try {
+      formData.set("category", result.data.category)
+      formData.set("stock", String(result.data.stock))
+      formData.set("price", String(result.data.price))
+      formData.set("description", result.data.description || "")
+      formData.set("images", JSON.stringify(result.data.images || []))
+      await action(formData)
+      toast.success("Producto guardado correctamente")
+    } catch (e: any) {
+      // Ignorar el error de redirect de Next (se usa en server actions al finalizar)
+      const digest = e?.digest
+      if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+        return
+      }
+      toast.error("Error al guardar el producto")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -96,7 +109,7 @@ export function ProductForm({ action, defaultValues, submitLabel = "Crear Produc
                   </SelectItem>
                 ) : (
                   categories.map((cat) => (
-                    <SelectItem key={cat.name} value={cat.name}>
+                    <SelectItem key={cat.id} value={cat.id}>
                       {getCategoryLabel(cat.name)}
                     </SelectItem>
                   ))

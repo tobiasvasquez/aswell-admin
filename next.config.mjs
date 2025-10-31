@@ -3,9 +3,7 @@ const nextConfig = {
     experimental: {
     turbo: false, // 🚫 desactiva Turbopack
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // No ocultar errores de TypeScript en build
   images: {
     unoptimized: true,
   },

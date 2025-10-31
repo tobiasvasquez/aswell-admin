@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useEffect } from "react"
+import { useState, useTransition } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,56 +11,22 @@ import Link from "next/link"
 import Image from "next/image"
 import { updateStockAction } from "@/app/actions/stock-actions"
 import { useRouter } from "next/navigation"
-import { getCategories } from "@/app/actions/category-actions"
-
-type Product = {
-  id: string
-  name: string
-  category: string
-  stock: number
-  price: number
-  description: string | null
-  images?: string[]
-  created_at: string
-  updated_at: string
-}
+import type { Product, Category } from "@/types"
+import { getCategoryLabel, getTextColorForBackground } from "@/lib/utils/category"
 
 type ProductListProps = {
   products: Product[]
+  categories: Category[]
 }
 
-// Dynamic category labels and colors
-const getCategoryLabel = (category: any): string => {
-  if (!category || typeof category !== 'string') {
-    return ''
-  }
-  return category.charAt(0).toUpperCase() + category.slice(1)
-}
-
-export function ProductList({ products }: ProductListProps) {
+export function ProductList({ products, categories }: ProductListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [updatingStock, setUpdatingStock] = useState<string | null>(null)
   const [optimisticProducts, setOptimisticProducts] = useState(products)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
-  const [categories, setCategories] = useState<Array<{id: string, name: string, count: number, color: string}>>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const cats = await getCategories()
-        setCategories(cats)
-      } catch (error) {
-        console.error("Error loading categories:", error)
-        setCategories([])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadCategories()
-  }, [])
+  const [isLoading] = useState(false)
 
   const filteredProducts = optimisticProducts.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -74,26 +40,19 @@ export function ProductList({ products }: ProductListProps) {
     return { label: "En stock", color: "bg-green-600 text-white" }
   }
 
-  const getCategoryColor = (productId: string): string => {
-    // Find the product to get its category ID
-    const product = products.find(p => p.id === productId)
-    if (!product) return "#6366f1 text-white"
-    
-    // Find the category by ID to get its color
-    const category = categories.find(c => c.id === product.category)
+  const getCategoryColor = (categoryId: string): { bgColor: string; textColor: string } => {
+    const category = categories.find(c => c.id === categoryId)
     if (category && category.color) {
-      const color = category.color
-      // Generate text color based on background brightness
-      const r = parseInt(color.slice(1, 3), 16)
-      const g = parseInt(color.slice(3, 5), 16)
-      const b = parseInt(color.slice(5, 7), 16)
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000
-      const textColor = brightness > 128 ? "text-gray-900" : "text-gray-50"
-      
-      return `${color} ${textColor}`
+      return {
+        bgColor: category.color,
+        textColor: getTextColorForBackground(category.color)
+      }
     }
     // Fallback color if category not found
-    return "#6366f1 text-white"
+    return {
+      bgColor: "#6366f1",
+      textColor: "text-white"
+    }
   }
 
   const handleStockChange = async (productId: string, currentStock: number, change: number) => {
@@ -148,7 +107,7 @@ export function ProductList({ products }: ProductListProps) {
                   </SelectItem>
                 ) : (
                   categories.map((cat) => (
-                    <SelectItem key={cat.name} value={cat.name}>
+                    <SelectItem key={cat.id} value={cat.id}>
                       {getCategoryLabel(cat.name)}
                     </SelectItem>
                   ))
@@ -201,13 +160,19 @@ export function ProductList({ products }: ProductListProps) {
                       </Link>
                       <CardDescription className="mt-1">{product.description || "Sin descripción"}</CardDescription>
                     </div>
-                    <Badge 
-                      className={getCategoryColor(product.id)} 
-                      variant="secondary"
-                      style={{ backgroundColor: getCategoryColor(product.id).split(' ')[0] }}
-                    >
-                      {getCategoryLabel(categories.find(c => c.id === product.category)?.name || product.category)}
-                    </Badge>
+                    {(() => {
+                      const categoryInfo = getCategoryColor(product.category)
+                      const category = categories.find(c => c.id === product.category)
+                      return (
+                        <Badge 
+                          className={categoryInfo.textColor} 
+                          variant="secondary"
+                          style={{ backgroundColor: categoryInfo.bgColor }}
+                        >
+                          {getCategoryLabel(category?.name || '')}
+                        </Badge>
+                      )
+                    })()}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">
