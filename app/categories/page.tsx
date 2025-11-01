@@ -1,4 +1,4 @@
-import { getCategories, createCategoryAction } from "@/app/actions/category-actions"
+import { getCategories, createCategoryAction, deleteCategoryAction } from "@/app/actions/category-actions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,10 +6,50 @@ import { Label } from "@/components/ui/label"
 import { Plus, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { ModeToggle } from "@/components/theme-provider"
+import { DeleteCategoryButton } from "@/components/delete-category-button"
+
+type CategoryListItemProps = {
+  category: {
+    id: string
+    name: string
+    color: string
+    count: number
+  }
+}
+
+function CategoryListItem({ category }: CategoryListItemProps) {
+  async function deleteThisCategory() {
+    "use server"
+    await deleteCategoryAction(category.id)
+  }
+
+  return (
+    <li className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+      <div className="flex items-center gap-3">
+        <div
+          className="h-4 w-4 rounded-full border-2"
+          style={{ backgroundColor: category.color }}
+        />
+        <span className="capitalize">{category.name}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-muted-foreground">
+          {category.count} productos
+        </span>
+        <DeleteCategoryButton
+          categoryId={category.id}
+          categoryName={category.name}
+          productCount={category.count}
+          deleteAction={deleteThisCategory}
+        />
+      </div>
+    </li>
+  )
+}
 
 export default async function CategoriesPage() {
   const categories = await getCategories()
-
+  
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
@@ -93,15 +133,7 @@ export default async function CategoriesPage() {
                 ) : (
                   <ul className="space-y-2">
                     {categories.map((category) => (
-                      <li
-                        key={category.name}
-                        className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-                      >
-                        <span className="capitalize">{category.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {category.count} productos
-                        </span>
-                      </li>
+                      <CategoryListItem key={category.id} category={category} />
                     ))}
                   </ul>
                 )}

@@ -72,3 +72,39 @@ export async function createCategoryAction(categoryName: string, color: string =
   
   return { success: true }
 }
+
+export async function deleteCategoryAction(categoryId: string) {
+  const supabase = await createClient()
+  
+  // Check if category has products
+  const { count, error: countError } = await supabase
+    .from("products")
+    .select("id", { count: "exact" })
+    .eq("category", categoryId)
+  
+  if (countError) {
+    console.error("Error checking category products:", countError)
+    throw new Error("Error al verificar los productos de la categoría")
+  }
+  
+  if (count && count > 0) {
+    throw new Error(`No se puede eliminar la categoría porque tiene ${count} producto(s) asociado(s). Por favor, mueve o elimina los productos primero.`)
+  }
+  
+  // Delete the category
+  const { error: deleteError } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", categoryId)
+  
+  if (deleteError) {
+    console.error("Error deleting category:", deleteError)
+    throw new Error("Error al eliminar la categoría")
+  }
+  
+  revalidatePath("/categories")
+  revalidatePath("/products/new")
+  revalidatePath("/products")
+  
+  return { success: true }
+}

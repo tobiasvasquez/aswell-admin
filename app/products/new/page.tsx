@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { ProductForm } from "@/components/product-form"
+import { BulkImageImport } from "@/components/bulk-image-import"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { getCategories } from "@/app/actions/category-actions"
+import { createProductsFromImages } from "@/app/actions/bulk-product-actions"
 
 export default async function NewProductPage() {
   const categories = await getCategories()
@@ -69,8 +71,20 @@ export default async function NewProductPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-2xl space-y-8">
           <ProductForm action={createProduct} categories={categories} />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">O</span>
+            </div>
+          </div>
+          <BulkImageImport
+            categories={categories}
+            onImport={createProductsFromImages}
+          />
         </div>
       </main>
     </div>
